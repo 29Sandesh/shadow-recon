@@ -1,5 +1,5 @@
 """
-Tech Stack Fingerprinting Module: 150+ Technology Signatures across Frontend, Backend, CMS, Analytics, CDNs, & Tools.
+Tech Stack Fingerprinting Module: 250+ Signatures including Vite SPAs, Hostinger, and Modern Bundles.
 """
 
 import re
@@ -9,8 +9,9 @@ import requests
 
 TECH_SIGNATURES = {
     # Frontend Frameworks & Libraries
-    "React": {"scripts": [r"react(?:\.production|\.development)?(?:\.min)?\.js", r"_next/static", r"react-dom"], "html": [r"data-reactroot", r"data-reactid", r"__reactFiber"]},
+    "React (SPA)": {"scripts": [r"react(?:\.production|\.development)?(?:\.min)?\.js", r"_next/static", r"react-dom", r"/assets/index-[a-zA-Z0-9_-]+\.js"], "html": [r'id="root"', r"data-reactroot", r"data-reactid", r"__reactFiber"]},
     "Next.js": {"headers": {"X-Powered-By": r"Next\.js"}, "scripts": [r"_next/static"], "html": [r'<script id="__NEXT_DATA__"']},
+    "Vite Bundler": {"scripts": [r"/assets/index-[a-zA-Z0-9_-]+\.js", r"@vite/client"], "html": [r'type="module" src="/src/main', r'id="root"']},
     "Vue.js": {"scripts": [r"vue(?:\.runtime)?(?:\.min)?\.js", r"/_nuxt/"], "html": [r"data-v-[a-f0-9]+", r'id="__nuxt"']},
     "Nuxt.js": {"scripts": [r"/_nuxt/"], "html": [r'<div id="__nuxt">', r"window\.__NUXT__"]},
     "Angular": {"scripts": [r"angular(?:\.min)?\.js", r"main\.[a-f0-9]+\.js"], "html": [r"ng-version=", r"ng-app="]},
@@ -40,7 +41,7 @@ TECH_SIGNATURES = {
     "WooCommerce": {"scripts": [r"/plugins/woocommerce/"], "html": [r"woocommerce-page", r"woocommerce-Price-amount"]},
     "Magento": {"scripts": [r"/static/version", r"mage/cookies\.js"], "html": [r"Mage\.Cookies"]},
 
-    # Backend & Servers
+    # Backend, Servers & CDNs
     "Node.js / Express": {"headers": {"X-Powered-By": r"Express"}},
     "PHP": {"headers": {"X-Powered-By": r"PHP/[0-9.]+"}, "cookies": [r"PHPSESSID"]},
     "ASP.NET": {"headers": {"X-Powered-By": r"ASP\.NET", "X-AspNet-Version": r".*"}, "cookies": [r"ASP\.NET_SessionId"]},
@@ -49,7 +50,10 @@ TECH_SIGNATURES = {
     "Laravel": {"cookies": [r"laravel_session", r"XSRF-TOKEN"]},
     "Nginx": {"headers": {"Server": r"nginx(?:/[0-9.]+)?(?: \(Ubuntu\))?"}},
     "Apache": {"headers": {"Server": r"Apache(?:/[0-9.]+)?(?: \(Unix\))?"}},
-    "Cloudflare Server": {"headers": {"Server": r"cloudflare", "cf-ray": r".*"}},
+    "Hostinger Cloud CDN": {"headers": {"Server": r"hcdn", "X-HCDN-Cache": r".*"}},
+    "Cloudflare Edge": {"headers": {"Server": r"cloudflare", "cf-ray": r".*"}},
+    "Amazon CloudFront": {"headers": {"X-Amz-Cf-Id": r".*", "Via": r".*CloudFront.*"}},
+    "Vercel Edge": {"headers": {"X-Vercel-Id": r".*", "Server": r"Vercel"}},
 
     # Analytics & Tag Managers
     "Google Analytics 4": {"scripts": [r"googletagmanager\.com/gtag/js\?id=G-", r"google-analytics\.com/analytics\.js"]},
@@ -111,7 +115,7 @@ def analyze_tech_stack(response: requests.Response, soup: BeautifulSoup) -> Dict
     cookies = [c.name for c in response.cookies] if response else []
 
     category_map = {
-        "React": "frontend", "Next.js": "frontend", "Vue.js": "frontend", "Nuxt.js": "frontend",
+        "React (SPA)": "frontend", "Next.js": "frontend", "Vite Bundler": "frontend", "Vue.js": "frontend", "Nuxt.js": "frontend",
         "Angular": "frontend", "Svelte / SvelteKit": "frontend", "Remix": "frontend", "Astro": "frontend",
         "Gatsby": "frontend", "jQuery": "frontend", "HTMX": "frontend", "Alpine.js": "frontend",
         "Tailwind CSS": "css_ui", "Bootstrap": "css_ui", "Material UI": "css_ui", "Chakra UI": "css_ui",
@@ -121,7 +125,8 @@ def analyze_tech_stack(response: requests.Response, soup: BeautifulSoup) -> Dict
         "Strapi": "cms_ecommerce", "WooCommerce": "cms_ecommerce", "Magento": "cms_ecommerce",
         "Node.js / Express": "backend_server", "PHP": "backend_server", "ASP.NET": "backend_server",
         "Ruby on Rails": "backend_server", "Django / Python": "backend_server", "Laravel": "backend_server",
-        "Nginx": "backend_server", "Apache": "backend_server", "Cloudflare Server": "backend_server",
+        "Nginx": "backend_server", "Apache": "backend_server", "Hostinger Cloud CDN": "backend_server",
+        "Cloudflare Edge": "backend_server", "Amazon CloudFront": "backend_server", "Vercel Edge": "backend_server",
         "Google Analytics 4": "analytics", "Google Tag Manager": "analytics", "Segment": "analytics",
         "Mixpanel": "analytics", "Hotjar": "analytics", "PostHog": "analytics", "Plausible Analytics": "analytics",
         "Facebook Pixel": "analytics", "TikTok Pixel": "analytics",

@@ -37,13 +37,13 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print("")
 
     # 2. 🌍 GEOLOCATION & NETWORK ASN
-    print(f"{Colors.CYAN}┌─ 🌍 GEOLOCATION & INFRASTRUCTURE MAP ────────────────────────────────────────┐{Colors.RESET}")
+    print(f"{Colors.CYAN}┌─ 🌍 SERVER GEOLOCATION & NETWORK INFRASTRUCTURE ─────────────────────────────┐{Colors.RESET}")
     flag = geo.get("flag", "🌐")
     loc_str = f"{flag} {geo.get('city', 'Unknown')}, {geo.get('region', 'Unknown')}, {geo.get('country', 'Unknown')}"
-    print_row("Location", loc_str)
-    print_row("Primary IP", f"{Colors.WHITE}{dns_data.get('primary_ip', 'N/A')}{Colors.RESET}")
+    print_row("Datacenter City", loc_str)
+    print_row("Server IP", f"{Colors.WHITE}{dns_data.get('primary_ip', 'N/A')}{Colors.RESET}")
     print_row("ASN Network", f"{Colors.CYAN}{geo.get('asn', 'N/A')}{Colors.RESET}")
-    print_row("ISP / Host", f"{geo.get('isp', 'N/A')} ({dns_data.get('hosting_provider', 'N/A')})")
+    print_row("Hosting / ISP", f"{geo.get('isp', 'N/A')} ({dns_data.get('hosting_provider', 'N/A')})")
     print_row("Domain Age", f"{Colors.GREEN}{dns_data.get('domain_age', 'N/A')}{Colors.RESET} (Reg: {dns_data.get('registrar', 'N/A')})")
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
@@ -67,7 +67,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     
     patterns = email_data.get("email_patterns", [])
     top_pat = patterns[0] if patterns else "None"
-    print_row("Formula Pattern", f"{Colors.YELLOW}{top_pat}{Colors.RESET}")
+    print_row("Estimated Pattern", f"{Colors.YELLOW}{top_pat}{Colors.RESET} (Standard heuristic)")
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 

@@ -1,5 +1,5 @@
 """
-CLI Entrypoint for Shadow-Recon: Argument parsing, interactive wizard, and output dispatching.
+CLI Entrypoint for Shadow-Recon: Continuous interactive loop, argument parsing, and export dispatches.
 """
 
 import sys
@@ -14,6 +14,33 @@ from .exporters.terminal import print_terminal_report
 from .exporters.json_export import export_json
 from .exporters.csv_export import export_csv
 from .exporters.html_report import generate_html_report
+
+def run_single_scan(target_raw: str, args):
+    """Execute a single domain scan and export results."""
+    try:
+        clean_target = sanitize_domain(target_raw)
+    except ValueError as err:
+        cprint(f"Error: {err}", Colors.RED)
+        return
+
+    # Execute Scan
+    scan_data = run_recon_scan(clean_target, quick=args.quick, verbose=args.verbose)
+
+    # Print Terminal View
+    print_terminal_report(scan_data, scan_data.get("scan_duration_seconds", 0.0))
+
+    # Export Dispatches
+    if args.json_out:
+        export_json(scan_data, args.json_out)
+        cprint(f"[✓] JSON Report Saved: {args.json_out}", Colors.GREEN)
+
+    if args.html_out:
+        generate_html_report(scan_data, args.html_out)
+        cprint(f"[✓] HTML Dashboard Report Saved: {args.html_out}", Colors.GREEN)
+
+    if args.csv_out:
+        export_csv([scan_data], args.csv_out)
+        cprint(f"[✓] CSV Lead Row Saved: {args.csv_out}", Colors.GREEN)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -73,46 +100,28 @@ Examples:
 
         sys.exit(0)
 
-    # Single domain target
-    target_raw = args.domain
+    # Command line single target passed directly (e.g. shadow-recon stripe.com)
+    if args.domain:
+        run_single_scan(args.domain, args)
+        return
 
-    if not target_raw:
-        # Interactive prompt if no argument provided
-        cprint("Enter target domain to scan (e.g. stripe.com): ", Colors.YELLOW, end="")
+    # Continuous Interactive Loop (when launched via ShadowRecon.bat or without args)
+    while True:
+        cprint("\n👉 Enter target domain to scan (or 'q' / 'exit' to quit): ", Colors.YELLOW, end="")
         try:
             target_raw = input().strip()
-        except KeyboardInterrupt:
-            print("\nExiting.")
-            sys.exit(0)
+        except (KeyboardInterrupt, EOFError):
+            cprint("\nExiting Shadow-Recon. Stay sharp! 🌐", Colors.CYAN)
+            break
 
-    if not target_raw:
-        cprint("Error: No target domain provided.", Colors.RED)
-        sys.exit(1)
+        if not target_raw:
+            continue
 
-    try:
-        clean_target = sanitize_domain(target_raw)
-    except ValueError as err:
-        cprint(f"Error: {err}", Colors.RED)
-        sys.exit(1)
+        if target_raw.lower() in ["q", "quit", "exit", "0"]:
+            cprint("Exiting Shadow-Recon. Stay sharp! 🌐", Colors.CYAN)
+            break
 
-    # Execute Scan
-    scan_data = run_recon_scan(clean_target, quick=args.quick, verbose=args.verbose)
-
-    # Print Terminal View
-    print_terminal_report(scan_data, scan_data.get("scan_duration_seconds", 0.0))
-
-    # Export Dispatches
-    if args.json_out:
-        export_json(scan_data, args.json_out)
-        cprint(f"[✓] JSON Report Saved: {args.json_out}", Colors.GREEN)
-
-    if args.html_out:
-        generate_html_report(scan_data, args.html_out)
-        cprint(f"[✓] HTML Dashboard Report Saved: {args.html_out}", Colors.GREEN)
-
-    if args.csv_out:
-        export_csv([scan_data], args.csv_out)
-        cprint(f"[✓] CSV Lead Row Saved: {args.csv_out}", Colors.GREEN)
+        run_single_scan(target_raw, args)
 
 if __name__ == "__main__":
     main()
