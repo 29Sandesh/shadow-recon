@@ -1,5 +1,5 @@
 """
-CLI Entrypoint for Shadow-Recon: Dead-Simple, Zero-Friction 1-Step Prompt with Smart Auto-Detection.
+CLI Entrypoint for Shadow-Recon: Clean Argument Parser and Smart 1-Step Interactive Prompt.
 """
 
 import sys
@@ -64,7 +64,7 @@ def handle_user_input(user_input: str, args=None):
         start_server(5000)
         return
 
-    # 3. Competitor Diff commands (e.g. 'diff stripe.com adyen.com' or 'stripe.com vs adyen.com' or 'stripe.com adyen.com')
+    # 3. Competitor Diff commands
     if " vs " in cmd.lower() or cmd.lower().startswith("diff ") or len(cmd.split()) == 2:
         clean_str = cmd.replace("diff", "").replace("VS", "vs")
         parts = clean_str.split("vs") if "vs" in clean_str else clean_str.split()
@@ -102,22 +102,36 @@ def handle_user_input(user_input: str, args=None):
     run_single_scan(cmd, args)
 
 def main():
+    # Fast path for 'diff' command
+    if len(sys.argv) >= 2 and sys.argv[1] == "diff":
+        print_banner()
+        if len(sys.argv) >= 4:
+            d1 = sanitize_domain(sys.argv[2])
+            d2 = sanitize_domain(sys.argv[3])
+            diff_res = run_competitor_diff(d1, d2)
+            print_diff_report(diff_res)
+        else:
+            cprint("Usage: shadow-recon diff domain1.com domain2.com", Colors.RED)
+        return
+
+    # Fast path for 'serve' command
+    if len(sys.argv) >= 2 and sys.argv[1] == "serve":
+        print_banner()
+        port = 5000
+        if "--port" in sys.argv:
+            try:
+                p_idx = sys.argv.index("--port")
+                port = int(sys.argv[p_idx + 1])
+            except Exception:
+                pass
+        start_server(port)
+        return
+
     parser = argparse.ArgumentParser(
         description="Shadow-Recon: Instant B2B Company & Domain Intelligence Scanner",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
-    subparsers = parser.add_subparsers(dest="subcommand")
-
-    # CLI subcommands for developers
-    diff_parser = subparsers.add_parser("diff", help="Compare two domains side-by-side")
-    diff_parser.add_argument("domain1", help="Primary domain")
-    diff_parser.add_argument("domain2", help="Competitor domain")
-
-    serve_parser = subparsers.add_parser("serve", help="Launch local REST API server")
-    serve_parser.add_argument("--port", type=int, default=5000, help="Port to listen on")
-
-    # Direct arguments
     parser.add_argument("domain", nargs="?", help="Target domain name (e.g. stripe.com)")
     parser.add_argument("-o", "--json", dest="json_out", help="Export as JSON file")
     parser.add_argument("--html", dest="html_out", help="Export as HTML dashboard")
@@ -128,21 +142,6 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose debug output")
 
     args = parser.parse_args()
-
-    # Direct subcommand: diff
-    if args.subcommand == "diff":
-        print_banner()
-        c1 = sanitize_domain(args.domain1)
-        c2 = sanitize_domain(args.domain2)
-        diff_res = run_competitor_diff(c1, c2)
-        print_diff_report(diff_res)
-        return
-
-    # Direct subcommand: serve
-    if args.subcommand == "serve":
-        print_banner()
-        start_server(args.port)
-        return
 
     # Direct domain passed via terminal (e.g. shadow-recon stripe.com)
     if args.domain:
