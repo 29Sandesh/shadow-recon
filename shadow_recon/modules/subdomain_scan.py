@@ -1,5 +1,5 @@
 """
-Subdomain Discovery Module: Fast Certificate Transparency Logs + DNS Resolution.
+Subdomain Discovery & Takeover Audit Module: Certificate Transparency, DNS Brute, & Dangling CNAME Takeover Check.
 """
 
 import requests
@@ -16,11 +16,21 @@ COMMON_SUBDOMAINS = [
     "v2", "m", "mobile", "preview", "demo", "sandbox", "stage", "git", "jenkins", "jira"
 ]
 
+TAKEOVER_SIGNATURES = {
+    "github.io": "There isn't a GitHub Pages site here",
+    "herokuapp.com": "No such app",
+    "s3.amazonaws.com": "The specified bucket does not exist",
+    "azurewebsites.net": "404 Web Site not found",
+    "myshopify.com": "Sorry, this shop is currently unavailable",
+    "surge.sh": "project not found",
+    "tumblr.com": "There's nothing here",
+    "ghost.io": "The thing you were looking for is no longer here",
+    "zendesk.com": "Help Center Closed"
+}
+
 def query_cert_transparency(domain: str, timeout: int = 3) -> Set[str]:
-    """Fetch subdomains recorded in Certificate Transparency logs with fast timeout."""
+    """Fetch subdomains recorded in Certificate Transparency logs."""
     discovered = set()
-    
-    # 1. Try crt.sh
     try:
         url = f"https://crt.sh/?q=%.{domain}&output=json"
         r = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
@@ -35,7 +45,6 @@ def query_cert_transparency(domain: str, timeout: int = 3) -> Set[str]:
     except Exception:
         pass
 
-    # 2. Try HackerTarget API fallback (instant DNS lookup)
     if len(discovered) == 0:
         try:
             ht_url = f"https://api.hackertarget.com/hostsearch/?q={domain}"
@@ -71,6 +80,14 @@ def brute_force_subdomains(domain: str, max_workers: int = 25) -> Set[str]:
 
     return live_subs
 
+def check_subdomain_takeover(subdomain: str, cnames: List[str], status_code: int) -> bool:
+    """Check if subdomain CNAME points to an unclaimed cloud service."""
+    cname_str = " ".join(cnames).lower()
+    for provider_host, error_fingerprint in TAKEOVER_SIGNATURES.items():
+        if provider_host in cname_str and status_code == 404:
+            return True
+    return False
+
 def scan_subdomains(domain: str, quick_mode: bool = False, max_probe_workers: int = 15) -> List[Dict[str, Any]]:
     """Execute complete subdomain reconnaissance and HTTP status probing."""
     all_subdomains = set()
@@ -84,7 +101,6 @@ def scan_subdomains(domain: str, quick_mode: bool = False, max_probe_workers: in
         brute_subs = brute_force_subdomains(domain)
         all_subdomains.update(brute_subs)
 
-    # Cap at 25 most relevant
     sorted_subs = sorted(list(all_subdomains))[:25]
 
     # 3. HTTP Probe for live status and page titles
@@ -94,6 +110,9 @@ def scan_subdomains(domain: str, quick_mode: bool = False, max_probe_workers: in
         for future in concurrent.futures.as_completed(future_map):
             try:
                 probe_res = future.result()
+                cnames = query_dns_records(probe_res["subdomain"], "CNAME")
+                probe_res["cnames"] = cnames
+                probe_res["takeover_vulnerable"] = check_subdomain_takeover(probe_res["subdomain"], cnames, probe_res.get("status_code", 0))
                 results.append(probe_res)
             except Exception:
                 pass

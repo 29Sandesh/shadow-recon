@@ -2,11 +2,10 @@
 Domain Intelligence Module: DNS Records, WHOIS/RDAP Registration Info, Hosting & CDN Detection.
 """
 
-import socket
 import datetime
 import requests
 from typing import Dict, Any, List
-from ..utils.dns_client import query_dns_records, resolve_ip_addresses, reverse_dns_lookup
+from ..utils.dns_client import query_dns_records, reverse_dns_lookup
 
 def get_rdap_info(domain: str, timeout: int = 5) -> Dict[str, Any]:
     """Fetch structured domain registration data via RDAP API."""
@@ -24,10 +23,8 @@ def get_rdap_info(domain: str, timeout: int = 5) -> Dict[str, Any]:
         r = requests.get(url, timeout=timeout, headers={"User-Agent": "ShadowRecon-OSINT/1.0"})
         if r.status_code == 200:
             data = r.json()
-            # Statuses
             info["status"] = data.get("status", [])
             
-            # Entities (Registrar)
             for entity in data.get("entities", []):
                 roles = entity.get("roles", [])
                 if "registrar" in roles:
@@ -38,7 +35,6 @@ def get_rdap_info(domain: str, timeout: int = 5) -> Dict[str, Any]:
                                 info["registrar"] = field[3]
                                 break
                                 
-            # Events (Created, Expiry)
             for event in data.get("events", []):
                 action = event.get("eventAction")
                 date_str = event.get("eventDate")
@@ -50,6 +46,9 @@ def get_rdap_info(domain: str, timeout: int = 5) -> Dict[str, Any]:
                         age_days = (now - created_dt).days
                         years = age_days // 365
                         months = (age_days % 365) // 30
+                        if months == 12:
+                            years += 1
+                            months = 0
                         info["domain_age"] = f"{years} years, {months} months" if years > 0 else f"{months} months ({age_days} days)"
                     except Exception:
                         pass

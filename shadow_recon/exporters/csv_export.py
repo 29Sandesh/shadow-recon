@@ -8,11 +8,16 @@ from typing import Dict, Any, List
 
 CSV_COLUMNS = [
     "Domain",
+    "Company / Brand",
+    "City",
+    "Country",
+    "ASN",
     "Primary IP",
     "Hosting Provider",
     "Registrar",
     "Domain Age",
-    "Nameservers",
+    "Public Inboxes",
+    "Phone Contacts",
     "Frontend Tech",
     "CSS Tech",
     "CMS Tech",
@@ -35,6 +40,8 @@ CSV_COLUMNS = [
 
 def format_domain_csv_row(data: Dict[str, Any]) -> List[str]:
     """Convert scan dict into a flat CSV row."""
+    comp = data.get("company_intel", {})
+    geo = data.get("geoip", {})
     dns = data.get("domain_intel", {})
     tech = data.get("tech_stack", {})
     email = data.get("email_intel", {})
@@ -45,11 +52,16 @@ def format_domain_csv_row(data: Dict[str, Any]) -> List[str]:
 
     return [
         data.get("domain", ""),
+        comp.get("brand_name", ""),
+        geo.get("city", ""),
+        geo.get("country", ""),
+        geo.get("asn", ""),
         dns.get("primary_ip", ""),
         dns.get("hosting_provider", ""),
         dns.get("registrar", ""),
         dns.get("domain_age", ""),
-        "; ".join(dns.get("nameservers", [])),
+        "; ".join(comp.get("public_emails", [])),
+        "; ".join(comp.get("phone_numbers", [])),
         "; ".join(tech.get("frontend", [])),
         "; ".join(tech.get("css_ui", [])),
         "; ".join(tech.get("cms_ecommerce", [])),
