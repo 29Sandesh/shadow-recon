@@ -9,6 +9,10 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     """Render full formatted terminal report."""
     domain = data.get("domain", "Unknown")
     comp = data.get("company_intel", {})
+    scale = data.get("scale_estimator", {})
+    ai = data.get("ai_summary", {})
+    vitals = data.get("web_vitals", {})
+    routes = data.get("routes_intel", {})
     geo = data.get("geoip", {})
     dns_data = data.get("domain_intel", {})
     tech_data = data.get("tech_stack", {})
@@ -21,7 +25,38 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
 
     print("")
     
-    # 1. 🏢 COMPANY & BUSINESS IDENTITY
+    # 1. 🧠 AI EXECUTIVE SUMMARY & PITCH ANGLE
+    if ai:
+        print(f"{Colors.CYAN}┌─ 🧠 AI EXECUTIVE BRIEF & PROSPECTING ANGLE ──────────────────────────────────┐{Colors.RESET}")
+        print_row("Business Model", f"{Colors.WHITE}{ai.get('business_brief', 'N/A')[:52]}...{Colors.RESET}")
+        warns = ai.get("security_warnings", [])
+        if warns:
+            print_row("Core Vulnerability", f"{Colors.YELLOW}{warns[0][:52]}...{Colors.RESET}")
+        print_row("Agency Pitch Angle", f"{Colors.GREEN}{ai.get('pitch_angle', 'N/A')[:52]}...{Colors.RESET}")
+        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+        print("")
+
+    # 2. 💼 B2B TECH BUDGET & SCALE ESTIMATOR
+    if scale:
+        print(f"{Colors.CYAN}┌─ 💼 B2B TECH BUDGET & COMPANY SCALE ESTIMATOR ──────────────────────────────┐{Colors.RESET}")
+        print_row("Maturity Tier", f"{Colors.BOLD}{Colors.WHITE}{scale.get('tier', 'N/A')}{Colors.RESET}")
+        print_row("Est. Employee Count", f"{Colors.CYAN}{scale.get('estimated_employees', 'N/A')}{Colors.RESET}")
+        print_row("Est. SaaS Tech Spend", f"{Colors.GREEN}{scale.get('estimated_saas_budget', 'N/A')}{Colors.RESET}")
+        print_row("Stack Complexity", f"{scale.get('infrastructure_complexity', 'N/A')}")
+        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+        print("")
+
+    # 3. ⚡ WEB VITALS & NETWORK PROTOCOLS
+    if vitals:
+        print(f"{Colors.CYAN}┌─ ⚡ WEB VITALS & PROTOCOL MODERNITY ─────────────────────────────────────────┐{Colors.RESET}")
+        print_row("Server TTFB Latency", f"{Colors.GREEN}{vitals.get('ttfb_ms', 0)} ms{Colors.RESET} (Time to first byte)")
+        h3_badge = f"{Colors.GREEN}[HTTP/3 QUIC Ready]{Colors.RESET}" if vitals.get("http3_quic_support") else f"{Colors.CYAN}[HTTP/2 Active]{Colors.RESET}"
+        print_row("Protocol Standard", h3_badge)
+        print_row("Tracker Weight", f"{vitals.get('tracker_bloat_rating', 'Clean')}")
+        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+        print("")
+
+    # 4. 🏢 COMPANY & BUSINESS IDENTITY
     print(f"{Colors.CYAN}┌─ 🏢 COMPANY & BUSINESS PROFILE ──────────────────────────────────────────────┐{Colors.RESET}")
     brand = comp.get("brand_name") or domain.split(".")[0].capitalize()
     print_row("Company / Brand", f"{Colors.BOLD}{Colors.WHITE}{brand}{Colors.RESET}")
@@ -30,13 +65,10 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     if comp.get("description"):
         desc = comp.get("description").replace("\n", " ").strip()
         print_row("Summary", f"{Colors.GRAY}{desc[:52]}...{Colors.RESET}")
-    if comp.get("keywords"):
-        kw_str = ", ".join(comp.get("keywords")[:4])
-        print_row("Focus Keywords", f"{Colors.MAGENTA}{kw_str}{Colors.RESET}")
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 2. 🌍 GEOLOCATION & NETWORK ASN
+    # 5. 🌍 GEOLOCATION & NETWORK ASN
     print(f"{Colors.CYAN}┌─ 🌍 SERVER GEOLOCATION & NETWORK INFRASTRUCTURE ─────────────────────────────┐{Colors.RESET}")
     flag = geo.get("flag", "🌐")
     loc_str = f"{flag} {geo.get('city', 'Unknown')}, {geo.get('region', 'Unknown')}, {geo.get('country', 'Unknown')}"
@@ -48,7 +80,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 3. 📬 PUBLIC CONTACT HARVEST & EMAIL INTEL
+    # 6. 📬 PUBLIC CONTACT HARVEST & EMAIL INTEL
     print(f"{Colors.CYAN}┌─ 📬 VERIFIED CONTACTS & EMAIL DELIVERABILITY ────────────────────────────────┐{Colors.RESET}")
     emails = comp.get("public_emails", [])
     if emails:
@@ -71,7 +103,20 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 4. 📡 PORT MATRIX & LIVE SERVICE EXPOSURE
+    # 7. 📜 PUBLIC ROUTES, APPS & POLICY DISCOVERY
+    if routes:
+        print(f"{Colors.CYAN}┌─ 📜 PUBLIC ROUTES, APPS & SECURITY POLICIES ─────────────────────────────────┐{Colors.RESET}")
+        sec_txt = f"{Colors.GREEN}[Found - Official Contacts Active]{Colors.RESET}" if routes.get("security_txt", {}).get("present") else f"{Colors.GRAY}[Not Published]{Colors.RESET}"
+        print_row("security.txt", sec_txt)
+        rob_txt = f"{Colors.GREEN}[Published]{Colors.RESET} ({routes.get('robots_txt', {}).get('disallowed_count', 0)} rules)" if routes.get("robots_txt", {}).get("present") else f"{Colors.GRAY}[Missing]{Colors.RESET}"
+        print_row("robots.txt", rob_txt)
+        apps = routes.get("mobile_apps", {}).get("details", [])
+        apps_str = f"{Colors.GREEN}{', '.join(apps)}{Colors.RESET}" if apps else f"{Colors.GRAY}[No Mobile App Links Found]{Colors.RESET}"
+        print_row("Mobile Apps Linked", apps_str)
+        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+        print("")
+
+    # 8. 📡 PORT MATRIX & LIVE SERVICE EXPOSURE
     if ports:
         open_ports = [p for p in ports if p.get("is_open")]
         print(f"{Colors.CYAN}┌─ 📡 SERVICE PORTS & EXPOSURE MATRIX ({len(open_ports)} Active) ──────────────────────────────┐{Colors.RESET}")
@@ -82,7 +127,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
         print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
         print("")
 
-    # 5. 🛠️ TECH STACK DETECTED
+    # 9. 🛠️ TECH STACK DETECTED
     print(f"{Colors.CYAN}┌─ 🛠️  TECH STACK & INTEGRATIONS DETECTED ─────────────────────────────────────┐{Colors.RESET}")
     all_tech_empty = True
     for cat_name, label in [
@@ -106,7 +151,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 6. 📡 SUBDOMAINS DISCOVERED
+    # 10. 📡 SUBDOMAINS DISCOVERED
     print(f"{Colors.CYAN}┌─ 📡 SUBDOMAINS & ASSET RECON ({len(subs_data)} found) ───────────────────────────────────┐{Colors.RESET}")
     if subs_data:
         for s in subs_data[:8]:
@@ -115,7 +160,6 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
             code_str = f"[{code}]" if code else "[---]"
             code_color = Colors.GREEN if code in [200, 301, 302] else (Colors.RED if code in [403, 500] else Colors.GRAY)
             title = s.get("title") or s.get("server") or ""
-            
             takeover = f" {Colors.RED}[TAKEOVER RISK]{Colors.RESET}" if s.get("takeover_vulnerable") else ""
             print(f"{Colors.CYAN}│{Colors.RESET}  {Colors.WHITE}{sub_name:<30}{Colors.RESET} {code_color}{code_str:<6}{Colors.RESET} {Colors.GRAY}{title[:30]}{Colors.RESET}{takeover}")
         if len(subs_data) > 8:
@@ -125,7 +169,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 7. 🔒 SSL/TLS & SECURITY HEADERS
+    # 11. 🔒 SSL/TLS & SECURITY HEADERS
     score = sec_headers.get("score", 0)
     grade = sec_headers.get("grade", "F")
     grade_color = Colors.GREEN if score >= 80 else (Colors.YELLOW if score >= 50 else Colors.RED)
@@ -144,7 +188,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 8. 🔗 SOCIAL & COMMUNITY
+    # 12. 🔗 SOCIAL & COMMUNITY
     has_socials = any(socials.values())
     if has_socials:
         print(f"{Colors.CYAN}┌─ 🔗 SOCIAL & PUBLIC PRESENCE ────────────────────────────────────────────────┐{Colors.RESET}")
@@ -159,6 +203,6 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print(f"  {Colors.BOLD}{Colors.GREEN}Scan Complete in {scan_duration:.2f}s{Colors.RESET}  |  Target: {Colors.CYAN}{domain}{Colors.RESET}  |  IP: {Colors.WHITE}{dns_data.get('primary_ip', 'N/A')}{Colors.RESET}")
     print(f"{Colors.CYAN}================================================================================{Colors.RESET}")
 
-def print_row(label: str, value: str, width: int = 18):
+def print_row(label: str, value: str, width: int = 20):
     """Print an aligned row inside a box."""
     print(f"{Colors.CYAN}│{Colors.RESET}  {Colors.WHITE}{label:<{width}}{Colors.RESET}: {value}")

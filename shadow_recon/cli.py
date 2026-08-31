@@ -14,6 +14,7 @@ from .exporters.terminal import print_terminal_report
 from .exporters.json_export import export_json
 from .exporters.csv_export import export_csv
 from .exporters.html_report import generate_html_report
+from .exporters.pdf_report import export_pdf_report
 
 def run_single_scan(target_raw: str, args):
     """Execute a single domain scan and export results."""
@@ -38,6 +39,10 @@ def run_single_scan(target_raw: str, args):
         generate_html_report(scan_data, args.html_out)
         cprint(f"[✓] HTML Dashboard Report Saved: {args.html_out}", Colors.GREEN)
 
+    if args.pdf_out:
+        export_pdf_report(scan_data, args.pdf_out)
+        cprint(f"[✓] Client Audit Report Saved: {args.pdf_out}", Colors.GREEN)
+
     if args.csv_out:
         export_csv([scan_data], args.csv_out)
         cprint(f"[✓] CSV Lead Row Saved: {args.csv_out}", Colors.GREEN)
@@ -50,7 +55,7 @@ def main():
 Examples:
   shadow-recon stripe.com
   shadow-recon github.com --html report.html
-  shadow-recon vercel.com --json results.json --csv leads.csv
+  shadow-recon vercel.com --pdf audit.pdf --csv leads.csv
   shadow-recon --file targets.txt --csv bulk_leads.csv
   shadow-recon openai.com --quick
         """
@@ -59,6 +64,7 @@ Examples:
     parser.add_argument("domain", nargs="?", help="Target domain name (e.g. stripe.com)")
     parser.add_argument("-o", "--json", dest="json_out", help="Export full report as JSON file (e.g. report.json)")
     parser.add_argument("--html", dest="html_out", help="Export interactive HTML report (e.g. report.html)")
+    parser.add_argument("--pdf", dest="pdf_out", help="Export client printable audit report (e.g. audit.html/pdf)")
     parser.add_argument("--csv", dest="csv_out", help="Export summary row to CSV spreadsheet (e.g. leads.csv)")
     parser.add_argument("-f", "--file", dest="file_in", help="Scan multiple domains from a text file (one domain per line)")
     parser.add_argument("-q", "--quick", action="store_true", help="Quick mode (skips heavy DNS brute force)")
@@ -100,12 +106,12 @@ Examples:
 
         sys.exit(0)
 
-    # Command line single target passed directly (e.g. shadow-recon stripe.com)
+    # Command line single target passed directly
     if args.domain:
         run_single_scan(args.domain, args)
         return
 
-    # Continuous Interactive Loop (when launched via ShadowRecon.bat or without args)
+    # Continuous Interactive Loop
     while True:
         cprint("\n👉 Enter target domain to scan (or 'q' / 'exit' to quit): ", Colors.YELLOW, end="")
         try:

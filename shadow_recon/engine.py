@@ -1,5 +1,5 @@
 """
-Core Orchestration Engine: Runs all intelligence modules concurrently with robust error isolation.
+Core Orchestration Engine: Runs all 12 intelligence modules concurrently.
 """
 
 import time
@@ -18,6 +18,10 @@ from .modules.subdomain_scan import scan_subdomains
 from .modules.ssl_audit import scan_ssl_tls
 from .modules.header_analysis import analyze_security_headers
 from .modules.social_recon import discover_social_links
+from .modules.routes_intel import scan_public_routes
+from .modules.scale_estimator import estimate_company_scale
+from .modules.web_vitals import audit_web_vitals
+from .modules.ai_summary import generate_executive_brief
 
 def run_recon_scan(domain: str, quick: bool = False, verbose: bool = False) -> Dict[str, Any]:
     """
@@ -41,8 +45,8 @@ def run_recon_scan(domain: str, quick: bool = False, verbose: bool = False) -> D
     }
 
     # Step 2: Concurrently execute scanning modules
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        print_step("Analyzing DNS, GeoIP, Tech Stack, Emails, Ports & Subdomains in parallel", "RUNNING")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        print_step("Correlating AI Brief, DNS, GeoIP, Tech Budget, Vitals, Ports & Subdomains", "RUNNING")
         
         future_dns = executor.submit(scan_domain_intel, domain)
         future_comp = executor.submit(extract_company_intel, soup, resp, domain)
@@ -51,9 +55,11 @@ def run_recon_scan(domain: str, quick: bool = False, verbose: bool = False) -> D
         future_ssl = executor.submit(scan_ssl_tls, domain)
         future_headers = executor.submit(analyze_security_headers, resp)
         future_socials = executor.submit(discover_social_links, soup, domain)
+        future_routes = executor.submit(scan_public_routes, domain)
+        future_vitals = executor.submit(audit_web_vitals, domain, resp, soup)
         future_subs = executor.submit(scan_subdomains, domain, quick)
 
-        # Collect DNS first to get IP for GeoIP and Port Matrix
+        # Collect DNS first for IP
         try:
             results["domain_intel"] = future_dns.result(timeout=15)
         except Exception:
@@ -106,12 +112,32 @@ def run_recon_scan(domain: str, quick: bool = False, verbose: bool = False) -> D
             results["social_recon"] = {}
 
         try:
+            results["routes_intel"] = future_routes.result(timeout=8)
+        except Exception:
+            results["routes_intel"] = {}
+
+        try:
+            results["web_vitals"] = future_vitals.result(timeout=8)
+        except Exception:
+            results["web_vitals"] = {}
+
+        try:
             results["subdomains"] = future_subs.result(timeout=25)
         except Exception:
             results["subdomains"] = []
 
+    # Step 3: Compute Scale & AI Synthesis
+    results["scale_estimator"] = estimate_company_scale(
+        results.get("tech_stack", {}),
+        results.get("domain_intel", {}),
+        results.get("subdomains", []),
+        results.get("email_intel", {})
+    )
+
+    results["ai_summary"] = generate_executive_brief(results)
+
     elapsed = time.time() - start_time
     results["scan_duration_seconds"] = round(elapsed, 2)
-    print_step("All intelligence vectors correlated successfully", "DONE")
+    print_step("All 12 intelligence vectors correlated successfully", "DONE")
 
     return results
