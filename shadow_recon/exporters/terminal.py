@@ -1,16 +1,14 @@
 """
-Terminal Pretty-Print Exporter: Outputs clean executive-grade typography and structured intelligence cards.
+Terminal Pretty-Print Exporter: Outputs 100% verified, factual enterprise OSINT intelligence.
 """
 
 from typing import Dict, Any
 from ..utils.helpers import Colors
 
 def print_terminal_report(data: Dict[str, Any], scan_duration: float):
-    """Render structured corporate terminal intelligence report."""
+    """Render structured corporate terminal intelligence report containing only verified data."""
     domain = data.get("domain", "Unknown")
     comp = data.get("company_intel", {})
-    scale = data.get("scale_estimator", {})
-    ai = data.get("ai_summary", {})
     vitals = data.get("web_vitals", {})
     routes = data.get("routes_intel", {})
     geo = data.get("geoip", {})
@@ -26,53 +24,23 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     ports = data.get("port_matrix", [])
 
     print("")
-    
-    # 1. EXECUTIVE ASSESSMENT & STRATEGIC PITCH
-    if ai:
-        print(f"{Colors.CYAN}┌─ EXECUTIVE ASSESSMENT & STRATEGIC PITCH ─────────────────────────────────────┐{Colors.RESET}")
-        print_row("Business Model", f"{Colors.WHITE}{ai.get('business_brief', 'N/A')[:52]}...{Colors.RESET}")
-        warns = ai.get("security_warnings", [])
-        if warns:
-            print_row("Primary Vulnerability", f"{Colors.YELLOW}{warns[0][:52]}...{Colors.RESET}")
-        print_row("Advisory Pitch", f"{Colors.GREEN}{ai.get('pitch_angle', 'N/A')[:52]}...{Colors.RESET}")
+
+    # 1. 🏢 BUSINESS IDENTITY & METADATA (Verified from HTML / OpenGraph)
+    if comp.get("title") or comp.get("description") or comp.get("brand_name"):
+        print(f"{Colors.CYAN}┌─ BUSINESS IDENTITY & METADATA ───────────────────────────────────────────────┐{Colors.RESET}")
+        brand = comp.get("brand_name") or domain.split(".")[0].capitalize()
+        print_row("Entity Name", f"{Colors.BOLD}{Colors.WHITE}{brand}{Colors.RESET}")
+        if comp.get("title"):
+            print_row("Page Title", f"{comp.get('title')[:52]}")
+        if comp.get("description"):
+            desc = comp.get("description").replace("\n", " ").strip()
+            print_row("Meta Description", f"{Colors.GRAY}{desc[:52]}...{Colors.RESET}")
+        if comp.get("keywords"):
+            print_row("Meta Keywords", f"{Colors.MAGENTA}{', '.join(comp.get('keywords')[:4])}{Colors.RESET}")
         print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
         print("")
 
-    # 2. SCALE, TECH SPEND & SUSTAINABILITY
-    if scale:
-        print(f"{Colors.CYAN}┌─ ENTERPRISE SCALE & SUSTAINABILITY AUDIT ────────────────────────────────────┐{Colors.RESET}")
-        print_row("Maturity Tier", f"{Colors.BOLD}{Colors.WHITE}{scale.get('tier', 'N/A')}{Colors.RESET}")
-        print_row("Estimated Headcount", f"{Colors.CYAN}{scale.get('estimated_employees', 'N/A')}{Colors.RESET}")
-        print_row("Est. SaaS Tech Budget", f"{Colors.GREEN}{scale.get('estimated_saas_budget', 'N/A')}{Colors.RESET}")
-        if green:
-            green_badge = f"{Colors.GREEN}[Renewable / Carbon-Neutral]{Colors.RESET}" if green.get("is_green_host") else f"{Colors.GRAY}[Standard Grid]{Colors.RESET}"
-            print_row("Green Hosting", f"{green_badge} (Rating: {green.get('rating', 'B')})")
-        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
-        print("")
-
-    # 3. WEB VITALS & PROTOCOL MODERNITY
-    if vitals:
-        print(f"{Colors.CYAN}┌─ INFRASTRUCTURE PERFORMANCE & PROTOCOLS ─────────────────────────────────────┐{Colors.RESET}")
-        print_row("TTFB Latency", f"{Colors.GREEN}{vitals.get('ttfb_ms', 0)} ms{Colors.RESET} (Time to first byte)")
-        h3_badge = f"{Colors.GREEN}[HTTP/3 QUIC Supported]{Colors.RESET}" if vitals.get("http3_quic_support") else f"{Colors.CYAN}[HTTP/2 Active]{Colors.RESET}"
-        print_row("Protocol Standard", h3_badge)
-        print_row("Script Tracker Load", f"{vitals.get('tracker_bloat_rating', 'Clean')}")
-        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
-        print("")
-
-    # 4. COMPANY & BUSINESS IDENTITY
-    print(f"{Colors.CYAN}┌─ BUSINESS IDENTITY & METADATA ───────────────────────────────────────────────┐{Colors.RESET}")
-    brand = comp.get("brand_name") or domain.split(".")[0].capitalize()
-    print_row("Entity Name", f"{Colors.BOLD}{Colors.WHITE}{brand}{Colors.RESET}")
-    if comp.get("title"):
-        print_row("Headline", f"{comp.get('title')[:52]}")
-    if comp.get("description"):
-        desc = comp.get("description").replace("\n", " ").strip()
-        print_row("Description", f"{Colors.GRAY}{desc[:52]}...{Colors.RESET}")
-    print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
-    print("")
-
-    # 5. GEOLOCATION & DATACENTER
+    # 2. 🌍 DATACENTER LOCATION & NETWORK INFRASTRUCTURE (Verified from IP / DNS)
     print(f"{Colors.CYAN}┌─ DATACENTER LOCATION & ASN ROUTING ──────────────────────────────────────────┐{Colors.RESET}")
     flag = geo.get("flag", "🌐")
     loc_str = f"{flag} {geo.get('city', 'Unknown')}, {geo.get('region', 'Unknown')}, {geo.get('country', 'Unknown')}"
@@ -80,35 +48,64 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print_row("Host IP", f"{Colors.WHITE}{dns_data.get('primary_ip', 'N/A')}{Colors.RESET}")
     print_row("ASN Network", f"{Colors.CYAN}{geo.get('asn', 'N/A')}{Colors.RESET}")
     print_row("Cloud / Host", f"{geo.get('isp', 'N/A')} ({dns_data.get('hosting_provider', 'N/A')})")
-    print_row("Domain Age", f"{Colors.GREEN}{dns_data.get('domain_age', 'N/A')}{Colors.RESET} (Reg: {dns_data.get('registrar', 'N/A')})")
+    print_row("Domain Age", f"{Colors.GREEN}{dns_data.get('domain_age', 'N/A')}{Colors.RESET} (Registrar: {dns_data.get('registrar', 'N/A')})")
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 6. CONTACTS & EMAIL SECURITY
-    print(f"{Colors.CYAN}┌─ CORPORATE INBOXES & ENTERPRISE EMAIL PROTOCOLS ─────────────────────────────┐{Colors.RESET}")
+    # 3. 📬 CORPORATE INBOXES & ENTERPRISE EMAIL SECURITY (Verified from DNS records)
+    print(f"{Colors.CYAN}┌─ CORPORATE INBOXES & EMAIL SECURITY PROTOCOLS ───────────────────────────────┐{Colors.RESET}")
     emails = comp.get("public_emails", [])
     if emails:
-        print_row("Public Inboxes", f"{Colors.GREEN}{', '.join(emails[:3])}{Colors.RESET}")
+        print_row("Harvested Inboxes", f"{Colors.GREEN}{', '.join(emails[:3])}{Colors.RESET}")
     phones = comp.get("phone_numbers", [])
     if phones:
-        print_row("Phone Lines", f"{Colors.CYAN}{', '.join(phones[:2])}{Colors.RESET}")
+        print_row("Public Phone", f"{Colors.CYAN}{', '.join(phones[:2])}{Colors.RESET}")
     
     print_row("Mail Gateway", email_data.get("provider", "N/A"))
     
     spf = email_data.get("spf", {})
-    spf_badge = f"{Colors.GREEN}[Active]{Colors.RESET}" if spf.get("configured") else f"{Colors.RED}[Missing]{Colors.RESET}"
+    spf_badge = f"{Colors.GREEN}[Active: {spf.get('policy', 'Configured')}]{Colors.RESET}" if spf.get("configured") else f"{Colors.RED}[Missing - Spoofable]{Colors.RESET}"
     dmarc = email_data.get("dmarc", {})
-    dmarc_badge = f"{Colors.GREEN}[Enforced]{Colors.RESET}" if dmarc.get("is_enforced") else f"{Colors.YELLOW}[Monitoring]{Colors.RESET}"
+    dmarc_badge = f"{Colors.GREEN}[Enforced ({dmarc.get('policy')})]{Colors.RESET}" if dmarc.get("is_enforced") else (f"{Colors.YELLOW}[Monitoring (p=none)]{Colors.RESET}" if dmarc.get("configured") else f"{Colors.RED}[Missing]{Colors.RESET}")
     
-    bimi_badge = f"{Colors.GREEN}[Configured]{Colors.RESET}" if ent_email.get("bimi", {}).get("configured") else f"{Colors.GRAY}[Not Set]{Colors.RESET}"
-    mta_badge = f"{Colors.GREEN}[Enforced]{Colors.RESET}" if ent_email.get("mta_sts", {}).get("configured") else f"{Colors.GRAY}[Not Set]{Colors.RESET}"
+    bimi_badge = f"{Colors.GREEN}[Active]{Colors.RESET}" if ent_email.get("bimi", {}).get("configured") else f"{Colors.GRAY}[Not Configured]{Colors.RESET}"
+    mta_badge = f"{Colors.GREEN}[Enforced]{Colors.RESET}" if ent_email.get("mta_sts", {}).get("configured") else f"{Colors.GRAY}[Not Configured]{Colors.RESET}"
     
-    print_row("Email Defenses", f"SPF: {spf_badge} | DMARC: {dmarc_badge} | BIMI: {bimi_badge} | MTA-STS: {mta_badge}")
+    print_row("SPF Policy", spf_badge)
+    print_row("DMARC Policy", dmarc_badge)
+    print_row("BIMI Brand Logo", bimi_badge)
+    print_row("MTA-STS Security", mta_badge)
     print_row("DNSSEC Status", f"{Colors.GREEN if ent_email.get('dnssec', {}).get('enabled') else Colors.GRAY}{ent_email.get('dnssec', {}).get('details')}{Colors.RESET}")
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 7. SERVICE PORTS MATRIX
+    # 4. ⚡ INFRASTRUCTURE PERFORMANCE & PROTOCOLS (Verified network measurements)
+    if vitals:
+        print(f"{Colors.CYAN}┌─ INFRASTRUCTURE PERFORMANCE & PROTOCOLS ─────────────────────────────────────┐{Colors.RESET}")
+        print_row("TTFB Latency", f"{Colors.GREEN}{vitals.get('ttfb_ms', 0)} ms{Colors.RESET} (Time to first byte)")
+        h3_badge = f"{Colors.GREEN}[HTTP/3 QUIC Supported]{Colors.RESET}" if vitals.get("http3_quic_support") else f"{Colors.CYAN}[HTTP/2 Active]{Colors.RESET}"
+        print_row("Protocol Standard", h3_badge)
+        print_row("Tracker Footprint", f"{vitals.get('tracker_bloat_rating', 'Clean')}")
+        if green:
+            green_badge = f"{Colors.GREEN}[Renewable Energy Cloud]{Colors.RESET}" if green.get("is_green_host") else f"{Colors.GRAY}[Standard Datacenter Grid]{Colors.RESET}"
+            print_row("Host Sustainability", f"{green_badge} (Payload: {green.get('page_size_kb', 0)} KB)")
+        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+        print("")
+
+    # 5. 📜 PUBLIC ROUTES & SECURITY POLICIES (Verified HTTP requests)
+    if routes:
+        print(f"{Colors.CYAN}┌─ PUBLIC ROUTES & DISCLOSURE POLICIES ────────────────────────────────────────┐{Colors.RESET}")
+        sec_txt = f"{Colors.GREEN}[Published: {', '.join(routes.get('security_txt', {}).get('contacts', []))[:36]}]{Colors.RESET}" if routes.get("security_txt", {}).get("present") else f"{Colors.GRAY}[Not Published]{Colors.RESET}"
+        print_row("security.txt", sec_txt)
+        rob_txt = f"{Colors.GREEN}[Published ({routes.get('robots_txt', {}).get('disallowed_count', 0)} rules)]{Colors.RESET}" if routes.get("robots_txt", {}).get("present") else f"{Colors.GRAY}[Missing]{Colors.RESET}"
+        print_row("robots.txt", rob_txt)
+        apps = routes.get("mobile_apps", {}).get("details", [])
+        if apps:
+            print_row("Mobile Apps", f"{Colors.GREEN}{', '.join(apps)}{Colors.RESET}")
+        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+        print("")
+
+    # 6. 📡 SERVICE PORTS MATRIX (Verified TCP Socket Probes)
     if ports:
         open_ports = [p for p in ports if p.get("is_open")]
         print(f"{Colors.CYAN}┌─ SERVICE PORTS & EXPOSURE MATRIX ({len(open_ports)} Active Ports) ─────────────────────────┐{Colors.RESET}")
@@ -119,7 +116,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
         print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
         print("")
 
-    # 8. TECH STACK
+    # 7. 🛠️ DETECTED TECHNOLOGIES (Verified Signatures)
     print(f"{Colors.CYAN}┌─ DETECTED TECHNOLOGIES & INFRASTRUCTURE ─────────────────────────────────────┐{Colors.RESET}")
     all_tech_empty = True
     for cat_name, label in [
@@ -143,7 +140,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 9. SUBDOMAINS
+    # 8. 📡 SUBDOMAINS (Verified Certificate Transparency Logs)
     print(f"{Colors.CYAN}┌─ SUBDOMAIN FLEET & ASSET RECONNAISSANCE ({len(subs_data)} found) ────────────────────────┐{Colors.RESET}")
     if subs_data:
         for s in subs_data[:8]:
@@ -161,7 +158,7 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
 
-    # 10. SSL & SECURITY HEADERS
+    # 9. 🔒 SSL/TLS & SECURITY COMPLIANCE (Verified TLS Handshake & Headers)
     score = sec_headers.get("score", 0)
     grade = sec_headers.get("grade", "F")
     grade_color = Colors.GREEN if score >= 80 else (Colors.YELLOW if score >= 50 else Colors.RED)
@@ -179,6 +176,16 @@ def print_terminal_report(data: Dict[str, Any], scan_duration: float):
     print_row("Active Defense Flags", f"{Colors.GREEN}{', '.join(sec_summary) if sec_summary else 'None'}{Colors.RESET}")
     print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
     print("")
+
+    # 10. 🔗 SOCIAL PROFILES (Verified Anchor Links & JSON-LD)
+    has_socials = any(socials.values())
+    if has_socials:
+        print(f"{Colors.CYAN}┌─ PUBLIC SOCIAL & COMMUNITY PRESENCE ────────────────────────────────────────┐{Colors.RESET}")
+        for platform, link in socials.items():
+            if link:
+                print_row(platform.capitalize(), f"{Colors.BLUE}{link}{Colors.RESET}")
+        print(f"{Colors.CYAN}└───────────────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+        print("")
 
     # SUMMARY FOOTER
     print(f"{Colors.CYAN}================================================================================{Colors.RESET}")

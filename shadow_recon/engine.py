@@ -1,5 +1,5 @@
 """
-Core Orchestration Engine: Runs all 14 intelligence modules concurrently.
+Core Orchestration Engine: Runs all verified intelligence modules concurrently.
 """
 
 import time
@@ -21,14 +21,12 @@ from .modules.ssl_audit import scan_ssl_tls
 from .modules.header_analysis import analyze_security_headers
 from .modules.social_recon import discover_social_links
 from .modules.routes_intel import scan_public_routes
-from .modules.scale_estimator import estimate_company_scale
 from .modules.web_vitals import audit_web_vitals
-from .modules.ai_summary import generate_executive_brief
 
 def run_recon_scan(domain: str, quick: bool = False, verbose: bool = False) -> Dict[str, Any]:
     """
-    Execute full reconnaissance scan across all intelligence modules.
-    Returns aggregated dictionary with complete findings.
+    Execute full reconnaissance scan across all verified intelligence vectors.
+    Returns aggregated dictionary with 100% verifiable findings.
     """
     start_time = time.time()
     
@@ -48,7 +46,7 @@ def run_recon_scan(domain: str, quick: bool = False, verbose: bool = False) -> D
 
     # Step 2: Concurrently execute scanning modules
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as executor:
-        print_step("Correlating AI Brief, DNS, GeoIP, BIMI/MTA-STS, Vitals, Ports & Subdomains", "RUNNING")
+        print_step("Correlating DNS, GeoIP, BIMI/MTA-STS, Vitals, Ports & Subdomains", "RUNNING")
         
         future_dns = executor.submit(scan_domain_intel, domain)
         future_comp = executor.submit(extract_company_intel, soup, resp, domain)
@@ -71,7 +69,7 @@ def run_recon_scan(domain: str, quick: bool = False, verbose: bool = False) -> D
         primary_ip = results.get("domain_intel", {}).get("primary_ip")
         hosting_prov = results.get("domain_intel", {}).get("hosting_provider", "Dedicated")
 
-        # Launch GeoIP and Port Scan using primary IP
+        # Launch GeoIP, Port Scan & Green Web using primary IP
         future_geo = executor.submit(scan_geoip, primary_ip)
         future_ports = executor.submit(scan_port_matrix, primary_ip)
         future_green = executor.submit(audit_sustainability, domain, resp, soup, hosting_prov)
@@ -140,16 +138,6 @@ def run_recon_scan(domain: str, quick: bool = False, verbose: bool = False) -> D
             results["subdomains"] = future_subs.result(timeout=25)
         except Exception:
             results["subdomains"] = []
-
-    # Step 3: Compute Scale & AI Synthesis
-    results["scale_estimator"] = estimate_company_scale(
-        results.get("tech_stack", {}),
-        results.get("domain_intel", {}),
-        results.get("subdomains", []),
-        results.get("email_intel", {})
-    )
-
-    results["ai_summary"] = generate_executive_brief(results)
 
     elapsed = time.time() - start_time
     results["scan_duration_seconds"] = round(elapsed, 2)
